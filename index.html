@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Counter-Strike 2 — Source 2 Evolution</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Teko / Rajdhani / JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;1,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cs2: {
+              orange: '#F36F21',
+              amber: '#FF8A00',
+              ct: '#5E98D9',
+              t: '#DE9B35',
+              dark: '#0B0E14',
+              panel: '#161C26',
+              green: '#559944'
+            }
+          },
+          fontFamily: {
+            display: ['"Chakra Petch"', 'sans-serif'],
+            sans: ['Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #0b0e14;
+      color: #f3f4f6;
+      overflow-x: hidden;
+    }
+    .panorama-panel {
+      background: rgba(22, 28, 38, 0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .skew-btn {
+      transform: skewX(-12deg);
+    }
+    .skew-btn > * {
+      transform: skewX(12deg);
+    }
+    .clip-corner {
+      clip-path: polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+    }
+    .radar-sweep {
+      background: conic-gradient(from 0deg, rgba(94, 152, 217, 0.35) 0deg, transparent 90deg);
+      animation: spin 4s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="font-sans antialiased selection:bg-cs2-orange selection:text-black">
+
+  <!-- TOP IN-GAME PANORAMA NAVBAR -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-black/75 backdrop-blur-md border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="bg-cs2-orange text-black font-display font-bold italic text-xl px-2.5 py-1 skew-btn">
+          <span>CS2</span>
+        </div>
+        <div class="leading-none">
+          <span class="block font-display font-bold tracking-wider text-lg text-white group-hover:text-cs2-orange transition">COUNTER-STRIKE 2</span>
+          <span class="block font-mono text-[10px] text-white/50 tracking-widest">SOURCE 2 ENGINE</span>
+        </div>
+      </a>
+
+      <!-- Center In-game Tabs -->
+      <nav class="hidden md:flex items-center gap-1 font-display font-bold tracking-wider text-sm">
+        <a href="#hero" class="px-4 py-5 text-cs2-orange border-b-2 border-cs2-orange bg-white/5">[ PLAY ]</a>
+        <a href="#source2" class="px-4 py-5 text-white/70 hover:text-white hover:bg-white/5 transition">[ SOURCE 2 ]</a>
+        <a href="#buymenu" class="px-4 py-5 text-white/70 hover:text-white hover:bg-white/5 transition">[ LOADOUT / BUY ]</a>
+        <a href="#maps" class="px-4 py-5 text-white/70 hover:text-white hover:bg-white/5 transition">[ MAPS ]</a>
+        <a href="#premier" class="px-4 py-5 text-white/70 hover:text-white hover:bg-white/5 transition">[ PREMIER ]</a>
+      </nav>
+
+      <!-- Right XP & Play CTA -->
+      <div class="flex items-center gap-4">
+        <div class="hidden sm:flex flex-col items-end">
+          <span class="font-mono text-xs text-cs2-ct font-bold">LVL 40 // GLOBAL GENERAL</span>
+          <div class="w-28 h-1.5 bg-white/10 mt-1 overflow-hidden">
+            <div class="w-4/5 h-full bg-cs2-ct"></div>
+          </div>
+        </div>
+        <a href="https://store.steampowered.com/app/730/CounterStrike_2/" target="_blank" class="skew-btn bg-[#559944] hover:bg-[#66b852] text-white font-display font-bold tracking-wider px-5 py-2 text-sm shadow-lg shadow-[#559944]/25 transition">
+          <span class="flex items-center gap-2">▶ PLAY FREE</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION WITH SIMULATED CS2 HUD -->
+  <section id="hero" class="relative min-h-screen pt-24 pb-16 flex flex-col justify-between overflow-hidden">
+    <!-- Atmospheric Background -->
+    <div class="absolute inset-0 -z-10">
+      <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=2000&q=85" alt="CS2 Background" class="w-full h-full object-cover opacity-30 scale-105" />
+      <div class="absolute inset-0 bg-gradient-to-t from-[#0b0e14] via-[#0b0e14]/75 to-black/80"></div>
+      <!-- Diagonal CS2 Orange Glow -->
+      <div class="absolute -right-32 top-1/4 w-96 h-96 bg-cs2-orange/20 blur-[140px] rounded-full"></div>
+      <div class="absolute -left-32 bottom-1/4 w-96 h-96 bg-cs2-ct/20 blur-[140px] rounded-full"></div>
+    </div>
+
+    <!-- TOP HUD: RADAR + ROUND TIMER + KILLFEED -->
+    <div class="max-w-7xl mx-auto w-full px-4 grid grid-cols-1 lg:grid-cols-3 items-start gap-4">
+      
+      <!-- Top-Left: Mini Radar -->
+      <div class="hidden lg:flex items-center gap-4">
+        <div class="relative w-32 h-32 rounded-full border-2 border-white/30 bg-[#0f1722]/90 overflow-hidden shadow-2xl">
+          <div class="absolute inset-0 radar-sweep"></div>
+          <!-- Radar Grid Lines -->
+          <div class="absolute inset-0 border border-white/10 rounded-full scale-75"></div>
+          <div class="absolute inset-0 border border-white/10 rounded-full scale-50"></div>
+          <!-- Bombsites & Dots -->
+          <span class="absolute top-5 left-8 font-mono text-[10px] font-bold bg-cs2-orange text-black px-1 rounded-sm">A</span>
+          <span class="absolute bottom-6 right-7 font-mono text-[10px] font-bold bg-cs2-orange text-black px-1 rounded-sm">B</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-cs2-ct absolute top-14 left-12 ring-2 ring-white"></span>
+          <span class="w-2 h-2 rounded-full bg-cs2-ct absolute top-16 left-16"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-red-500 absolute top-8 left-10 animate-ping"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-red-500 absolute top-8 left-10"></span>
+        </div>
+        <div class="font-mono text-xs text-white/60 space-y-1">
+          <div class="text-cs2-ct font-bold">LOCATION: BOMBSITE A</div>
+          <div>TICKRATE: SUB-TICK SYSTEM</div>
+          <div class="text-emerald-400">PING: 9 ms // LOSS: 0%</div>
+        </div>
+      </div>
+
+      <!-- Top-Center: Round Scoreboard HUD -->
+      <div class="flex justify-center">
+        <div class="panorama-panel px-5 py-2 flex items-center gap-5 shadow-xl">
+          <!-- CT Avatars -->
+          <div class="hidden sm:flex gap-1">
+            <span class="w-6 h-6 bg-cs2-ct/30 border border-cs2-ct text-[10px] font-mono flex items-center justify-center">CT</span>
+            <span class="w-6 h-6 bg-cs2-ct/30 border border-cs2-ct text-[10px] font-mono flex items-center justify-center">CT</span>
+            <span class="w-6 h-6 bg-cs2-ct/30 border border-cs2-ct text-[10px] font-mono flex items-center justify-center">CT</span>
+          </div>
+          <div class="text-right">
+            <span class="block font-mono text-[10px] text-cs2-ct">COUNTER-TERRORISTS</span>
+            <span class="font-display font-bold text-2xl text-cs2-ct">12</span>
+          </div>
+          <div class="bg-black/60 px-3 py-1 border border-white/15 text-center">
+            <span class="block font-mono text-lg font-bold text-white" id="round-timer">01:15</span>
+            <span class="block font-mono text-[9px] text-white/50">MR12 PREMIER</span>
+          </div>
+          <div class="text-left">
+            <span class="block font-mono text-[10px] text-cs2-t">TERRORISTS</span>
+            <span class="font-display font-bold text-2xl text-cs2-t">11</span>
+          </div>
+          <!-- T Avatars -->
+          <div class="hidden sm:flex gap-1">
+            <span class="w-6 h-6 bg-cs2-t/30 border border-cs2-t text-[10px] font-mono flex items-center justify-center">T</span>
+            <span class="w-6 h-6 bg-cs2-t/30 border border-cs2-t text-[10px] font-mono flex items-center justify-center">T</span>
+            <span class="w-6 h-6 bg-cs2-t/30 border border-cs2-t text-[10px] font-mono flex items-center justify-center">T</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top-Right: Authentic CS2 Killfeed -->
+      <div class="hidden lg:flex flex-col items-end gap-1.5 font-mono text-xs">
+        <div class="bg-black/75 border-l-4 border-red-500 px-3 py-1 flex items-center gap-2">
+          <span class="text-cs2-ct font-bold">s1mple</span>
+          <span class="text-white/60">[AWP ⌖ HS]</span>
+          <span class="text-cs2-t font-bold">donk</span>
+        </div>
+        <div class="bg-black/75 border-l-4 border-cs2-orange px-3 py-1 flex items-center gap-2">
+          <span class="text-cs2-t font-bold">m0NESY</span>
+          <span class="text-white/60">[AK-47 💨 Smoke]</span>
+          <span class="text-cs2-ct font-bold">ZywOo</span>
+        </div>
+        <div class="bg-black/75 border-l-4 border-white/30 px-3 py-1 flex items-center gap-2">
+          <span class="text-cs2-ct font-bold">NiKo</span>
+          <span class="text-white/60">[Desert Eagle ⌖]</span>
+          <span class="text-cs2-t font-bold">jL</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER HERO CONTENT -->
+    <div class="max-w-5xl mx-auto px-4 text-center my-12">
+      <div class="inline-block bg-cs2-orange/15 border border-cs2-orange text-cs2-orange font-mono text-xs uppercase px-4 py-1.5 mb-6 tracking-widest">
+        POWERED BY SOURCE 2 // THE NEXT ERA OF COUNTER-STRIKE
+      </div>
+      <h1 class="font-display font-bold italic uppercase text-5xl sm:text-7xl lg:text-8xl tracking-tight leading-none text-white drop-shadow-lg">
+        КРУПНЕЙШИЙ ТЕХНИЧЕСКИЙ <span class="text-cs2-orange">СКАЧОК В ИСТОРИИ CS</span>
+      </h1>
+      <p class="mt-6 text-lg sm:text-xl text-white/75 max-w-3xl mx-auto leading-relaxed">
+        Динамические объемные дымовые гранаты, подтиковая архитектура серверов Sub-Tick, полностью переработанные карты на движке Source 2 и обновленный соревновательный режим Premier.
+      </p>
+      <div class="mt-10 flex flex-wrap justify-center gap-4">
+        <a href="#buymenu" class="skew-btn bg-cs2-orange hover:bg-cs2-amber text-black font-display font-bold text-lg px-8 py-3.5 transition shadow-xl shadow-cs2-orange/20">
+          <span>ОТКРЫТЬ МЕНЮ ЗАКУПА [B]</span>
+        </a>
+        <a href="#source2" class="skew-btn panorama-panel hover:bg-white/10 text-white font-display font-bold text-lg px-8 py-3.5 transition">
+          <span>ИЗУЧИТЬ ТЕХНОЛОГИИ SOURCE 2</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- BOTTOM HUD: HP / ARMOR / MONEY / EQUIPPED WEAPON -->
+    <div class="max-w-7xl mx-auto w-full px-4 flex flex-wrap items-end justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="panorama-panel px-5 py-3 flex items-center gap-6">
+          <div class="flex items-baseline gap-2">
+            <span class="text-cs2-orange font-bold text-xl">✚</span>
+            <span class="font-display font-bold text-4xl text-white">100</span>
+            <span class="font-mono text-xs text-white/50">HP</span>
+          </div>
+          <div class="w-px h-8 bg-white/15"></div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-cs2-ct font-bold text-xl">🛡</span>
+            <span class="font-display font-bold text-4xl text-white">100</span>
+            <span class="font-mono text-xs text-white/50">ARMOR</span>
+          </div>
+        </div>
+        <div class="panorama-panel px-4 py-3 font-mono text-emerald-400 font-bold text-xl">
+          $ 16,000
+        </div>
+      </div>
+
+      <div class="panorama-panel px-6 py-3 flex items-center gap-6">
+        <div class="text-right">
+          <span class="block font-mono text-[10px] text-cs2-orange uppercase">PRIMARY WEAPON</span>
+          <span class="font-display font-bold text-xl tracking-wider">AK-47 // VULCAN</span>
+        </div>
+        <div class="font-display font-bold text-3xl text-white">
+          30 <span class="text-white/40 text-xl">/ 90</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 1: SOURCE 2 ENGINE FEATURES -->
+  <section id="source2" class="py-24 border-t border-white/10 bg-[#0e131b]">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+        <div>
+          <span class="font-mono text-xs text-cs2-orange tracking-widest uppercase">// ТЕХНОЛОГИИ ДВИЖКА</span>
+          <h2 class="font-display font-bold italic uppercase text-4xl sm:text-5xl mt-2">ВОЗМОЖНОСТИ SOURCE 2</h2>
+        </div>
+        <p class="text-white/60 max-w-md mt-4 md:mt-0 text-sm">
+          Counter-Strike 2 — это бесплатное улучшение CS:GO, обеспечивающее реалистичный рендеринг, новую сетевую архитектуру и обновленные инструменты мастерской.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Feature 1: Interactive Volumetric Smoke -->
+        <div class="panorama-panel p-6 flex flex-col justify-between clip-corner">
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <span class="font-mono text-xs bg-cs2-orange/20 text-cs2-orange px-2.5 py-1">01 // VOLUMETRIC SMOKE</span>
+              <button onclick="toggleSmoke()" id="smoke-btn" class="font-mono text-xs bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-300 px-3 py-1 transition">
+                💥 КИНУТЬ HE ГРАНАТУ
+              </button>
+            </div>
+            <h3 class="font-display font-bold text-2xl uppercase mb-2">Динамический объемный дым</h3>
+            <p class="text-white/65 text-sm mb-6">
+              Дым теперь взаимодействует с окружением, реагирует на освещение, выстрелы и взрывы осколочных гранат, временно рассеиваясь.
+            </p>
+          </div>
+          <div class="relative h-48 rounded overflow-hidden border border-white/10">
+            <img src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80" alt="Smoke Demo" class="w-full h-full object-cover" />
+            <div id="smoke-overlay" class="absolute inset-0 bg-gray-400/75 backdrop-blur-md flex items-center justify-center transition-all duration-500">
+              <span class="font-mono text-xs text-black font-bold bg-white/80 px-3 py-1.5">ДЫМОВАЯ ЗАВЕСА АКТИВНА (НАЖМИТЕ КНОПКУ ВЫШЕ)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 2: Sub-Tick Architecture -->
+        <div class="panorama-panel p-6 flex flex-col justify-between clip-corner">
+          <div>
+            <span class="inline-block font-mono text-xs bg-cs2-ct/20 text-cs2-ct px-2.5 py-1 mb-4">02 // SUB-TICK NETWORK</span>
+            <h3 class="font-display font-bold text-2xl uppercase mb-2">Что видишь, то и получаешь</h3>
+            <p class="text-white/65 text-sm mb-6">
+              Частота тиков больше не имеет значения для стрельбы и передвижения. Сервер с точностью до миллисекунды знает, когда вы нажали на спусковой крючок.
+            </p>
+          </div>
+          <div class="bg-black/60 p-4 border border-white/10 space-y-4 font-mono text-xs">
+            <div>
+              <div class="flex justify-between text-white/50 mb-1">
+                <span>OLD 64-TICK SERVER</span>
+                <span class="text-red-400">ЗАДЕРЖКА ТИКА</span>
+              </div>
+              <div class="h-3 bg-white/10 flex justify-between items-center px-2">
+                <span class="w-2 h-2 bg-white/40 rounded-full"></span>
+                <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                <span class="w-2 h-2 bg-white/40 rounded-full"></span>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-cs2-orange mb-1">
+                <span>CS2 SUB-TICK ARCHITECTURE</span>
+                <span class="text-emerald-400">0.00ms EXACT CLICK</span>
+              </div>
+              <div class="h-3 bg-cs2-orange/20 border border-cs2-orange relative flex items-center">
+                <div class="w-full h-0.5 bg-cs2-orange"></div>
+                <span class="w-3 h-3 bg-emerald-400 rounded-full absolute left-1/2 -translate-x-1/2 ring-4 ring-emerald-400/30"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 3: Source 2 PBR Rendering -->
+        <div class="panorama-panel p-6 flex flex-col justify-between clip-corner">
+          <div>
+            <span class="inline-block font-mono text-xs bg-emerald-500/20 text-emerald-400 px-2.5 py-1 mb-4">03 // SOURCE 2 LIGHTING</span>
+            <h3 class="font-display font-bold text-2xl uppercase mb-2">Физически корректный рендеринг</h3>
+            <p class="text-white/65 text-sm mb-6">
+              Полностью новая система освещения PBR создает реалистичные блики, воду, отражения и текстуры материалов на всех картах.
+            </p>
+          </div>
+          <div class="relative h-48 overflow-hidden border border-white/10">
+            <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80" alt="Source 2 Lighting" class="w-full h-full object-cover" />
+            <div class="absolute bottom-2 left-2 right-2 bg-black/80 px-3 py-2 flex justify-between font-mono text-[11px]">
+              <span class="text-cs2-orange">RAYTRACED REFLECTIONS</span>
+              <span class="text-emerald-400">HDR ENABLED</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: INTERACTIVE IN-GAME BUY MENU SIMULATOR -->
+  <section id="buymenu" class="py-24 border-t border-white/10">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="mb-10">
+        <span class="font-mono text-xs text-cs2-orange tracking-widest uppercase">// АРСЕНАЛ И ЭКОНОМИКА РАУНДА</span>
+        <h2 class="font-display font-bold italic uppercase text-4xl sm:text-5xl mt-2">ИНТЕРАКТИВНОЕ МЕНЮ ЗАКУПА [B]</h2>
+        <p class="text-white/60 text-sm mt-2">Нажмите на любое оружие в сетке закупа, чтобы изучить его внутриигровые ТТХ и стоимость в раунде.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left 2 Cols: CS2 Buy Grid -->
+        <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4" id="weapon-grid">
+          <!-- Weapon cards rendered by JS -->
+        </div>
+
+        <!-- Right Col: Selected Weapon Telemetry -->
+        <div class="panorama-panel p-6 border-t-4 border-t-cs2-orange flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between font-mono text-xs text-white/50 mb-2">
+              <span id="w-category">RIFLES // СЛОТ 4</span>
+              <span id="w-side" class="text-cs2-t font-bold">T / CT LOADOUT</span>
+            </div>
+            <h3 id="w-name" class="font-display font-bold text-4xl uppercase text-white">AK-47</h3>
+            <div id="w-cost" class="font-mono text-2xl text-emerald-400 font-bold mt-1">$2,700</div>
+            <p id="w-desc" class="text-white/65 text-sm mt-4">
+              Мощная и надежная штурмовая винтовка. Смертоносна при стрельбе короткими очередями и убивает противника с одного попадания в голову даже через шлем.
+            </p>
+
+            <!-- Stat Bars -->
+            <div class="mt-8 space-y-4 font-mono text-xs">
+              <div>
+                <div class="flex justify-between mb-1"><span>УРОН (DAMAGE)</span><span id="w-dmg-val">92%</span></div>
+                <div class="h-2 bg-white/10"><div id="w-dmg-bar" class="h-full bg-cs2-orange transition-all duration-300" style="width: 92%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1"><span>БРОНЕПРОБИВАЕМОСТЬ</span><span id="w-pen-val">77.5%</span></div>
+                <div class="h-2 bg-white/10"><div id="w-pen-bar" class="h-full bg-cs2-ct transition-all duration-300" style="width: 78%"></div></div>
+              </div>
+              <div>
+                <div class="flex justify-between mb-1"><span>СКОРОСТРЕЛЬНОСТЬ</span><span id="w-rof-val">600 RPM</span></div>
+                <div class="h-2 bg-white/10"><div id="w-rof-bar" class="h-full bg-emerald-400 transition-all duration-300" style="width: 68%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 pt-4 border-t border-white/10 flex items-center justify-between font-mono text-xs text-white/50">
+            <span>НАГРАДА ЗА УБИЙСТВО: $300</span>
+            <span class="text-cs2-orange">БЕЗ КАЗИНО И РУЛЕТОК</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: ACTIVE DUTY MAPS -->
+  <section id="maps" class="py-24 border-t border-white/10 bg-[#0e131b]">
+    <div class="max-w-7xl mx-auto px-4">
+      <span class="font-mono text-xs text-cs2-orange tracking-widest uppercase">// ПЕРЕРАБОТАННЫЕ АРЕНЫ</span>
+      <h2 class="font-display font-bold italic uppercase text-4xl sm:text-5xl mt-2 mb-10">КАРТЫ ПЕРЕДОВОЙ (ACTIVE DUTY)</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="panorama-panel overflow-hidden group clip-corner">
+          <div class="h-52 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=900&q=80" alt="Inferno" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+            <span class="absolute top-3 left-3 bg-cs2-orange text-black font-mono text-xs font-bold px-2.5 py-1">OVERHAUL // ПОЛНЫЙ РЕДИЗАЙН</span>
+          </div>
+          <div class="p-6">
+            <h3 class="font-display font-bold text-2xl uppercase">INFERNO & OVERPASS</h3>
+            <p class="text-white/65 text-sm mt-2">Карты созданы с нуля с использованием всех инструментов Source 2, глобального освещения и детализированных текстур.</p>
+          </div>
+        </div>
+
+        <div class="panorama-panel overflow-hidden group clip-corner">
+          <div class="h-52 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=900&q=80" alt="Nuke" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+            <span class="absolute top-3 left-3 bg-cs2-ct text-black font-mono text-xs font-bold px-2.5 py-1">UPGRADE // ОБНОВЛЕНИЕ PBR</span>
+          </div>
+          <div class="p-6">
+            <h3 class="font-display font-bold text-2xl uppercase">NUKE & ANCIENT</h3>
+            <p class="text-white/65 text-sm mt-2">Используют новую систему освещения Source 2, создающую реалистичные отражения, материалы и блики света.</p>
+          </div>
+        </div>
+
+        <div class="panorama-panel overflow-hidden group clip-corner">
+          <div class="h-52 overflow-hidden relative">
+            <img src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=900&q=80" alt="Mirage" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+            <span class="absolute top-3 left-3 bg-white text-black font-mono text-xs font-bold px-2.5 py-1">TOUCHSTONE // ЭТАЛОН</span>
+          </div>
+          <div class="p-6">
+            <h3 class="font-display font-bold text-2xl uppercase">MIRAGE & DUST II</h3>
+            <p class="text-white/65 text-sm mt-2">Классические карты с улучшенной читаемостью моделей игроков и освещением при полном сохранении легендарного геймплея.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: CS RATING & PREMIER TIERS -->
+  <section id="premier" class="py-24 border-t border-white/10">
+    <div class="max-w-7xl mx-auto px-4">
+      <span class="font-mono text-xs text-cs2-orange tracking-widest uppercase">// СОРЕВНОВАТЕЛЬНЫЙ РЕЖИМ</span>
+      <h2 class="font-display font-bold italic uppercase text-4xl sm:text-5xl mt-2 mb-4">РЕЙТИНГ CS В РЕЖИМЕ PREMIER</h2>
+      <p class="text-white/65 max-w-2xl text-sm mb-10">
+        Ваш рейтинг CS — это точный показатель вашего мастерства в глобальной и региональной таблицах лидеров с предматчевым пиком и баном карт.
+      </p>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="skew-btn bg-[#1f2937] border-l-4 border-gray-400 p-4 text-center">
+          <div class="font-mono font-bold text-2xl text-gray-300">4,500</div>
+          <div class="font-mono text-[10px] text-white/50 mt-1">UNCOMMON TIER</div>
+        </div>
+        <div class="skew-btn bg-[#1e293b] border-l-4 border-sky-400 p-4 text-center">
+          <div class="font-mono font-bold text-2xl text-sky-400">11,200</div>
+          <div class="font-mono text-[10px] text-white/50 mt-1">RARE TIER</div>
+        </div>
+        <div class="skew-btn bg-[#1e1b4b] border-l-4 border-indigo-400 p-4 text-center">
+          <div class="font-mono font-bold text-2xl text-indigo-400">16,800</div>
+          <div class="font-mono text-[10px] text-white/50 mt-1">MYTHICAL TIER</div>
+        </div>
+        <div class="skew-btn bg-[#3b0764]/60 border-l-4 border-fuchsia-400 p-4 text-center">
+          <div class="font-mono font-bold text-2xl text-fuchsia-400">21,450</div>
+          <div class="font-mono text-[10px] text-white/50 mt-1">LEGENDARY TIER</div>
+        </div>
+        <div class="skew-btn bg-[#450a0a]/70 border-l-4 border-red-500 p-4 text-center">
+          <div class="font-mono font-bold text-2xl text-red-400">27,900</div>
+          <div class="font-mono text-[10px] text-white/50 mt-1">ANCIENT TIER</div>
+        </div>
+        <div class="skew-btn bg-amber-500/15 border-l-4 border-amber-400 p-4 text-center shadow-lg shadow-amber-500/10">
+          <div class="font-mono font-bold text-2xl text-amber-400">31,850+</div>
+          <div class="font-mono text-[10px] text-amber-300/80 mt-1">GLOBAL GOLD</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-white/10 py-10 bg-black/80 text-center font-mono text-xs text-white/40">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>COUNTER-STRIKE 2 // SOURCE 2 SHOWCASE LANDING</div>
+      <div>POWERED BY PANORAMA UI STYLE • GITHUB PAGES READY</div>
+    </div>
+  </footer>
+
+  <!-- INTERACTIVE SCRIPTS -->
+  <script>
+    // Smoke toggle
+    let smokeCleared = false;
+    function toggleSmoke() {
+      const overlay = document.getElementById('smoke-overlay');
+      const btn = document.getElementById('smoke-btn');
+      smokeCleared = !smokeCleared;
+      if (smokeCleared) {
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        btn.innerText = '💨 ВОССТАНОВИТЬ ДЫМ';
+      } else {
+        overlay.style.opacity = '1';
+        btn.innerText = '💥 КИНУТЬ HE ГРАНАТУ';
+      }
+    }
+
+    // Buy Menu Data
+    const weapons = [
+      { id: 1, slot: 'RIFLES // СЛОТ 1', name: 'AK-47', cost: '$2,700', side: 'TERRORIST', dmg: 92, pen: 78, rof: '600 RPM', rofPct: 68, desc: 'Мощная и надежная штурмовая винтовка. Убивает противника с одного попадания в голову даже через шлем.' },
+      { id: 2, slot: 'RIFLES // СЛОТ 2', name: 'M4A1-S', cost: '$2,900', side: 'COUNTER-TERRORIST', dmg: 84, pen: 70, rof: '600 RPM', rofPct: 68, desc: 'Бесшумная винтовка спецназа с глушителем, обеспечивающая минимальную отдачу и отсутствие трассеров сквозь дым.' },
+      { id: 3, slot: 'RIFLES // СЛОТ 3', name: 'AWP', cost: '$4,750', side: 'BOTH TEAMS', dmg: 100, pen: 97, rof: '41 RPM', rofPct: 25, desc: 'Легендарная снайперская винтовка по принципу «один выстрел — один труп». Контролирует длинные дистанции на любой карте.' },
+      { id: 4, slot: 'PISTOLS // СЛОТ 4', name: 'DESERT EAGLE', cost: '$700', side: 'BOTH TEAMS', dmg: 88, pen: 93, rof: '267 RPM', rofPct: 40, desc: 'Культовый крупнокалиберный пистолет, способный перевернуть экономический раунд одним точным выстрелом в голову.' },
+      { id: 5, slot: 'MID-TIER // СЛОТ 5', name: 'MP9', cost: '$1,250', side: 'COUNTER-TERRORIST', dmg: 60, pen: 60, rof: '857 RPM', rofPct: 95, desc: 'Идеальный пистолет-пулемет для фарм-раундов и сдерживания быстрых выходов соперника вблизи.' },
+      { id: 6, slot: 'GRENADES // СЛОТ 6', name: 'SMOKE + FLASH + HE', cost: '$800', side: 'UTILITY PACK', dmg: 55, pen: 50, rof: 'TACTICAL', rofPct: 100, desc: 'Полный тактический набор гранат на раунд: динамический дым Source 2, светошумовая и осколочная гранаты.' }
+    ];
+
+    const grid = document.getElementById('weapon-grid');
+    function renderWeapons(activeId = 1) {
+      grid.innerHTML = weapons.map(w => `
+        <button onclick="selectWeapon(${w.id})" class="text-left panorama-panel p-5 transition hover:border-cs2-orange ${w.id === activeId ? 'border-cs2-orange bg-cs2-orange/10' : ''}">
+          <div class="flex justify-between font-mono text-xs text-white/50 mb-2">
+            <span>[${w.id}] ${w.slot}</span>
+            <span class="text-emerald-400 font-bold">${w.cost}</span>
+          </div>
+          <div class="font-display font-bold text-2xl uppercase text-white">${w.name}</div>
+          <div class="font-mono text-[11px] text-cs2-ct mt-1">${w.side}</div>
+        </button>
+      `).join('');
+    }
+
+    function selectWeapon(id) {
+      const w = weapons.find(item => item.id === id);
+      if (!w) return;
+      document.getElementById('w-category').innerText = w.slot;
+      document.getElementById('w-side').innerText = w.side;
+      document.getElementById('w-name').innerText = w.name;
+      document.getElementById('w-cost').innerText = w.cost;
+      document.getElementById('w-desc').innerText = w.desc;
+      document.getElementById('w-dmg-val').innerText = w.dmg + '%';
+      document.getElementById('w-dmg-bar').style.width = w.dmg + '%';
+      document.getElementById('w-pen-val').innerText = w.pen + '%';
+      document.getElementById('w-pen-bar').style.width = w.pen + '%';
+      document.getElementById('w-rof-val').innerText = w.rof;
+      document.getElementById('w-rof-bar').style.width = w.rofPct + '%';
+      renderWeapons(id);
+    }
+
+    renderWeapons(1);
+  </script>
+</body>
+</html>
