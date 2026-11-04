@@ -2,228 +2,244 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
-  ArrowDownRight,
+  ArrowDown,
   ArrowRight,
   ArrowUpRight,
+  Check,
   Crosshair,
-  Copy,
-  Crown,
-  ExternalLink,
+  Gamepad2,
   Globe2,
   Menu,
   Pin,
+  Play,
   Radio,
   Shield,
-  ShieldCheck,
   Sparkles,
   Target,
   Trophy,
-  Users,
+  Volume2,
   X,
   Zap,
 } from 'lucide-react'
 import { useState } from 'react'
 
-type ImageProps = { src: string; alt: string; className?: string; fallbackTone?: string }
+type TacticalImageProps = { src: string; alt: string; className?: string }
 
-function ResilientImage({ src, alt, className = '', fallbackTone = '#de9b35' }: ImageProps) {
+type StatBlock = {
+  damage: number
+  fireRate: number
+  accuracy: number
+  armor: number
+}
+
+type Weapon = {
+  name: string
+  cost: string
+  key: string
+  className: 'rifle' | 'sniper' | 'pistol' | 'grenade' | 'gear'
+  description: string
+  stats: StatBlock
+}
+
+type BuyCategory = 'PISTOLS' | 'MID-TIER' | 'RIFLES' | 'GRENADES' | 'EQUIPMENT'
+
+type MapGroup = 'OVERHAUL' | 'UPGRADE' | 'TOUCHSTONE'
+
+type MapInfo = {
+  name: string
+  subtitle: string
+  image: string
+  callouts: string[]
+  ctWin: number
+  tWin: number
+}
+
+const images = {
+  hero: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=2000&q=85',
+  overhaul: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=1200&q=80',
+  upgrade: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+  touchstone: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1200&q=80',
+}
+
+const weapons: Record<BuyCategory, Weapon[]> = {
+  PISTOLS: [
+    { name: 'GLOCK-18', cost: 'FREE', key: '1', className: 'pistol', description: 'Standard issue · Terrorist', stats: { damage: 34, fireRate: 82, accuracy: 48, armor: 47 } },
+    { name: 'USP-S', cost: 'FREE', key: '2', className: 'pistol', description: 'Silenced · Counter-Terrorist', stats: { damage: 35, fireRate: 41, accuracy: 68, armor: 50 } },
+    { name: 'DESERT EAGLE', cost: '700', key: '3', className: 'pistol', description: 'High impact · .50 AE', stats: { damage: 53, fireRate: 19, accuracy: 74, armor: 93 } },
+    { name: 'P250', cost: '300', key: '4', className: 'pistol', description: 'Compact · High utility', stats: { damage: 38, fireRate: 48, accuracy: 57, armor: 64 } },
+  ],
+  'MID-TIER': [
+    { name: 'MP9', cost: '1,250', key: '1', className: 'rifle', description: 'Fast handling · CT side', stats: { damage: 26, fireRate: 89, accuracy: 63, armor: 60 } },
+    { name: 'MAC-10', cost: '1,050', key: '2', className: 'rifle', description: 'Run and gun · T side', stats: { damage: 29, fireRate: 88, accuracy: 54, armor: 57 } },
+    { name: 'XM1014', cost: '2,000', key: '3', className: 'rifle', description: 'Automatic · Close quarters', stats: { damage: 20, fireRate: 67, accuracy: 43, armor: 80 } },
+    { name: 'P90', cost: '2,350', key: '4', className: 'rifle', description: 'High capacity · Mobility', stats: { damage: 26, fireRate: 83, accuracy: 66, armor: 69 } },
+  ],
+  RIFLES: [
+    { name: 'AK-47', cost: '2,700', key: '1', className: 'rifle', description: 'Assault rifle · Terrorist', stats: { damage: 36, fireRate: 75, accuracy: 58, armor: 77 } },
+    { name: 'M4A1-S', cost: '2,900', key: '2', className: 'rifle', description: 'Silenced rifle · Counter-Terrorist', stats: { damage: 38, fireRate: 68, accuracy: 76, armor: 70 } },
+    { name: 'AWP', cost: '4,750', key: '3', className: 'sniper', description: 'Bolt action · One shot, one kill', stats: { damage: 100, fireRate: 17, accuracy: 96, armor: 97 } },
+    { name: 'M4A4', cost: '3,000', key: '4', className: 'rifle', description: 'Full auto · Counter-Terrorist', stats: { damage: 33, fireRate: 76, accuracy: 73, armor: 70 } },
+  ],
+  GRENADES: [
+    { name: 'HE GRENADE', cost: '300', key: '1', className: 'grenade', description: 'Explosive · Area damage', stats: { damage: 66, fireRate: 24, accuracy: 45, armor: 48 } },
+    { name: 'SMOKE GRENADE', cost: '300', key: '2', className: 'grenade', description: 'Volumetric · Line of sight', stats: { damage: 0, fireRate: 30, accuracy: 50, armor: 0 } },
+    { name: 'FLASHBANG', cost: '200', key: '3', className: 'grenade', description: 'Tactical · Disorient', stats: { damage: 0, fireRate: 36, accuracy: 50, armor: 0 } },
+    { name: 'MOLOTOV', cost: '400', key: '4', className: 'grenade', description: 'Incendiary · Area denial', stats: { damage: 42, fireRate: 20, accuracy: 52, armor: 38 } },
+  ],
+  EQUIPMENT: [
+    { name: 'KEVLAR VEST', cost: '650', key: '1', className: 'gear', description: 'Body armor · 100 points', stats: { damage: 0, fireRate: 0, accuracy: 0, armor: 100 } },
+    { name: 'VEST + HELMET', cost: '1,000', key: '2', className: 'gear', description: 'Full armor · Head protection', stats: { damage: 0, fireRate: 0, accuracy: 0, armor: 100 } },
+    { name: 'DEFUSE KIT', cost: '400', key: '3', className: 'gear', description: 'Counter-Terrorist · Faster defuse', stats: { damage: 0, fireRate: 0, accuracy: 0, armor: 0 } },
+    { name: 'ZEUS X27', cost: '200', key: '4', className: 'gear', description: 'Tactical · Single-use', stats: { damage: 100, fireRate: 9, accuracy: 62, armor: 0 } },
+  ],
+}
+
+const mapGroups: Record<MapGroup, MapInfo[]> = {
+  OVERHAUL: [
+    { name: 'ITALY', subtitle: 'REBUILT FROM THE GROUND UP', image: images.overhaul, callouts: ['MARKET', 'MID', 'ARCHES'], ctWin: 53, tWin: 47 },
+    { name: 'OVERPASS', subtitle: 'A NEW PATH THROUGH THE CITY', image: images.overhaul, callouts: ['A SITE', 'CONNECTOR', 'B SHORT'], ctWin: 51, tWin: 49 },
+    { name: 'INFERNO', subtitle: 'THE CLASSIC, REIMAGINED', image: images.overhaul, callouts: ['BANANA', 'MID', 'BOMBSITE A'], ctWin: 49, tWin: 51 },
+  ],
+  UPGRADE: [
+    { name: 'NUKE', subtitle: 'SOURCE 2 PHYSICALLY BASED RENDERING', image: images.upgrade, callouts: ['OUTSIDE', 'RAMP', 'BOMBSITE B'], ctWin: 54, tWin: 46 },
+    { name: 'ANCIENT', subtitle: 'A WORLD OF LIGHT AND MATERIAL', image: images.upgrade, callouts: ['TEMPLE', 'MID', 'BOMBSITE A'], ctWin: 51, tWin: 49 },
+    { name: 'ANUBIS', subtitle: 'BUILT FOR THE NEXT ROUND', image: images.upgrade, callouts: ['CANAL', 'MID DOORS', 'BOMBSITE B'], ctWin: 48, tWin: 52 },
+  ],
+  TOUCHSTONE: [
+    { name: 'MIRAGE', subtitle: 'THE COMPETITIVE FOUNDATION', image: images.touchstone, callouts: ['PALACE', 'MID', 'BOMBSITE A'], ctWin: 52, tWin: 48 },
+    { name: 'DUST II', subtitle: 'EVERY ROUND HAS A STORY', image: images.touchstone, callouts: ['LONG A', 'MID DOORS', 'BOMBSITE B'], ctWin: 50, tWin: 50 },
+    { name: 'VERTIGO', subtitle: 'HIGH STAKES. HIGHER GROUND.', image: images.touchstone, callouts: ['SCAFFOLD', 'MID', 'BOMBSITE A'], ctWin: 48, tWin: 52 },
+  ],
+}
+
+const vetoMaps = ['MIRAGE', 'DUST II', 'INFERNO', 'NUKE', 'ANCIENT', 'ANUBIS', 'OVERPASS']
+const ratingTiers = [
+  { score: '4,500', label: 'GREY', color: 'silver' },
+  { score: '12,000', label: 'LIGHT BLUE', color: 'cyan' },
+  { score: '18,500', label: 'PURPLE', color: 'purple' },
+  { score: '24,000', label: 'PINK', color: 'pink' },
+  { score: '28,500', label: 'RED', color: 'red' },
+  { score: '32,000+', label: 'GOLD', color: 'gold' },
+]
+
+function TacticalImage({ src, alt, className = '' }: TacticalImageProps) {
   const [failed, setFailed] = useState(false)
-  if (failed) {
-    return (
-      <div className={`image-fallback ${className}`} style={{ '--fallback-tone': fallbackTone } as React.CSSProperties} aria-label={alt} role="img">
-        <div className="fallback-grid" />
-        <svg viewBox="0 0 600 260" aria-hidden="true" className="fallback-weapon">
-          <path d="M72 123h62l30-19h76l24 18h65l17 13h65l19 16h93v18h-55l-18 34h-31l-11-34h-90l-26-16h-96l-32 11h-56l-22-15H72z" fill="currentColor" />
-          <path d="M199 155h48l-9 42h-24zM145 115l20-26h64l13 16h-76zM402 132h38v-9h-38z" fill="currentColor" opacity=".8" />
-          <circle cx="342" cy="142" r="7" fill="#0b0e14" />
-        </svg>
-        <span className="fallback-label">ARMORY // SIGNAL LOST</span>
-      </div>
-    )
-  }
+  if (failed) return <div className={`tactical-image-fallback ${className}`} role="img" aria-label={alt}><Crosshair size={32} /><span>MAP FEED // SOURCE 2</span></div>
   return <img className={className} src={src} alt={alt} onError={() => setFailed(true)} loading="lazy" />
 }
 
-const drops = [
-  { name: 'AWP | Chromatic Aberration', player: 'n0thing', avatar: 'photo-1534528741775-53994a69daeb', rarity: 'Covert', tone: '#eb4b4b', img: 'photo-1612287230202-1ff1d85d1bdf' },
-  { name: 'AK-47 | Neon Rider', player: 'Kovaak', avatar: 'photo-1500648767791-00dcc994a43e', rarity: 'Classified', tone: '#d32ce6', img: 'photo-1511512578047-dfb367046420' },
-  { name: '★ Karambit | Doppler', player: 's1mple', avatar: 'photo-1506794778202-cad84cf45f1d', rarity: 'Covert', tone: '#eb4b4b', img: 'photo-1550745165-9bc0b252726f' },
-  { name: 'M4A1-S | Printstream', player: 'Jett', avatar: 'photo-1535713875002-d1d0cf377fde', rarity: 'Classified', tone: '#d32ce6', img: 'photo-1538481199705-c710c4e965fc' },
-]
-
-const skins = [
-  { category: 'RIFLES', weapon: 'AWP', skin: 'Dragon Lore', wear: 'Souvenir FN', float: '0.0124', price: '$14,500', rarity: 'CONTRABAND', tone: '#e4ae39', image: 'photo-1612287230202-1ff1d85d1bdf', stat: '1,284', code: 'AWP-DRGN-042' },
-  { category: 'KNIVES', weapon: 'KARAMBIT', skin: 'Doppler Sapphire', wear: 'StatTrak™ FN', float: '0.0081', price: '$9,200', rarity: 'COVERT', tone: '#eb4b4b', image: 'photo-1550745165-9bc0b252726f', stat: '092', code: 'KARAMBIT-DOP-007' },
-  { category: 'RIFLES', weapon: 'AK-47', skin: 'Wild Lotus', wear: 'Minimal Wear', float: '0.0742', price: '$8,400', rarity: 'COVERT', tone: '#eb4b4b', image: 'photo-1511512578047-dfb367046420', stat: '3,510', code: 'AK47-LOTUS-118' },
-  { category: 'GLOVES', weapon: 'SPORT GLOVES', skin: "Pandora's Box", wear: 'Field-Tested', float: '0.1890', price: '$5,100', rarity: 'CLASSIFIED', tone: '#d32ce6', image: 'photo-1563089145-599997674d42', stat: '—', code: 'GLOVE-PAND-003' },
-]
-
-const maps = [
-  { name: 'MIRAGE', location: 'MIDDLE EAST · ACTIVE DUTY', mode: 'RETAKE 5v5', players: '18 / 20', ping: '14', image: 'photo-1509198397868-475647b2a1e5', tone: '#e4ae39' },
-  { name: 'DUST II', location: 'MAGHREB · ACTIVE DUTY', mode: 'DM HS ONLY', players: '16 / 20', ping: '22', image: 'photo-1518709268805-4e9042af9f23', tone: '#60a5fa' },
-  { name: 'INFERNO', location: 'ITALY · ACTIVE DUTY', mode: 'COMPETITIVE', players: '10 / 10', ping: '18', image: 'photo-1579783902614-a3fb3927b675', tone: '#eb4b4b' },
-  { name: 'NUKE', location: 'UNITED STATES · ACTIVE DUTY', mode: 'COMPETITIVE', players: '12 / 20', ping: '31', image: 'photo-1526374965328-7f61d4dc18c5', tone: '#60a5fa' },
-]
-
-const players = [
-  { rank: '01', name: 'donk', country: '🇷🇺', team: 'Team Spirit', rating: '31,450', tier: 'gold', wins: '78.4%', hs: '62.1%', avatar: 'photo-1534528741775-53994a69daeb', delta: '+214' },
-  { rank: '02', name: 'ZywOo', country: '🇫🇷', team: 'Vitality', rating: '27,890', tier: 'red', wins: '74.8%', hs: '58.7%', avatar: 'photo-1500648767791-00dcc994a43e', delta: '+180' },
-  { rank: '03', name: 'm0NESY', country: '🇰🇿', team: 'G2 Esports', rating: '24,120', tier: 'pink', wins: '71.2%', hs: '55.9%', avatar: 'photo-1506794778202-cad84cf45f1d', delta: '+96' },
-  { rank: '04', name: 'ropz', country: '🇪🇪', team: 'FaZe Clan', rating: '22,640', tier: 'blue', wins: '69.7%', hs: '51.3%', avatar: 'photo-1535713875002-d1d0cf377fde', delta: '+73' },
-]
-
-function SectionTitle({ eyebrow, title, side }: { eyebrow: string; title: React.ReactNode; side?: React.ReactNode }) {
-  return (
-    <div className="section-heading">
-      <div>
-        <div className="eyebrow"><span className="eyebrow-line" />{eyebrow}</div>
-        <h2>{title}</h2>
-      </div>
-      {side}
-    </div>
-  )
+function GameLogo({ small = false }: { small?: boolean }) {
+  return <a className={`game-logo ${small ? 'game-logo-small' : ''}`} href="#top" aria-label="Counter-Strike 2 home"><span className="cs-mark"><Crosshair size={small ? 22 : 27} strokeWidth={1.8} /></span><span className="cs-logo-type"><b>COUNTER-STRIKE</b><strong>2</strong></span></a>
 }
 
-function Navbar() {
+function TopBar() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const links = [['PLAY', '#servers'], ['LOADOUT', '#loadout'], ['SERVERS', '#servers'], ['PREMIER RANK', '#leaderboard'], ['PASS', '#season']]
-  return (
-    <>
-      <header className="site-header">
-        <div className="nav-shell">
-          <a className="brand" href="#top" aria-label="CS2 Arena home"><span className="brand-mark"><Crosshair size={23} strokeWidth={1.8} /></span><span>CS2<span className="brand-slash">//</span>ARENA</span></a>
-          <nav className="desktop-nav" aria-label="Main navigation">{links.map(([label, href], index) => <a key={label} className={index === 0 ? 'nav-link nav-active' : 'nav-link'} href={href}>{label}{index === 0 && <span className="nav-active-line" />}</a>)}</nav>
-          <div className="nav-actions"><div className="online-pill"><span className="online-dot" /><span>24,590 <small>ONLINE</small></span></div><a className="steam-button" href="https://steamcommunity.com/login/home/" target="_blank" rel="noreferrer"><span className="steam-symbol">S</span><span>LOGIN WITH STEAM</span><ArrowUpRight size={14} /></a><button className="mobile-menu" aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button></div>
-        </div>
-        <AnimatePresence>{menuOpen && <motion.nav className="mobile-nav" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} aria-label="Mobile navigation">{links.map(([label, href]) => <a key={label} href={href} onClick={() => setMenuOpen(false)}>{label}<ArrowUpRight size={14} /></a>)}</motion.nav>}</AnimatePresence>
-      </header>
-      <div className="ticker"><div className="ticker-label"><span className="ticker-live"><span />LIVE</span><span>SKIN DROPS</span></div><div className="ticker-track">{[...drops, ...drops].map((drop, i) => <div className="ticker-item" key={`${drop.name}-${i}`} style={{ '--rarity-tone': drop.tone } as React.CSSProperties}><div className="ticker-thumb"><ResilientImage src={`https://images.unsplash.com/${drop.img}?auto=format&fit=crop&w=160&q=80`} alt="" fallbackTone={drop.tone} /></div><div className="ticker-copy"><span className="ticker-skin">{drop.name}</span><span className="ticker-player"><ResilientImage src={`https://images.unsplash.com/${drop.avatar}?auto=format&fit=crop&w=48&q=80`} alt="" />{drop.player} <span>UNBOXED</span></span></div><span className="ticker-rarity">{drop.rarity}</span></div>)}</div><a className="ticker-all" href="#loadout">VIEW ALL <ArrowRight size={13} /></a></div>
-    </>
-  )
+  const items = [
+    ['PLAY', '#top'],
+    ['LOADOUT', '#buy-menu'],
+    ['SOURCE 2', '#source-2'],
+    ['MAPS', '#maps'],
+    ['PREMIER', '#premier'],
+  ]
+  return <header className="game-topbar"><div className="topbar-inner"><GameLogo /><nav className="menu-tabs" aria-label="Main menu">{items.map(([label, href], index) => <a className={index === 0 ? 'menu-tab menu-tab-active' : 'menu-tab'} href={href} key={label}>{label}</a>)}</nav><div className="rank-summary"><span className="rank-emblem"><Trophy size={16} /></span><span className="rank-copy"><b>LEVEL 40 <i>·</i> GLOBAL GENERAL</b><span className="xp-track"><i /></span><small>1,240 / 2,000 XP</small></span></div><a className="play-free" href="https://store.steampowered.com/app/730/CounterStrike_2/" target="_blank" rel="noreferrer"><span>PLAY CS2 FREE</span><ArrowUpRight size={14} /></a><button className="mobile-nav-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen}>{menuOpen ? <X size={20} /> : <Menu size={20} />}</button></div><AnimatePresence>{menuOpen && <motion.nav className="mobile-game-menu" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>{items.map(([label, href]) => <a key={label} href={href} onClick={() => setMenuOpen(false)}>{label}<ArrowUpRight size={14} /></a>)}</motion.nav>}</AnimatePresence></header>
 }
 
-function Hero({ onInspect }: { onInspect: (item: (typeof skins)[number]) => void }) {
+function MiniRadar() {
+  return <div className="mini-radar" aria-label="Tactical minimap with A and B bombsites"><div className="radar-grid" /><div className="radar-ring radar-ring-one" /><div className="radar-ring radar-ring-two" /><div className="radar-route route-one" /><div className="radar-route route-two" /><span className="radar-bomb bomb-a">A</span><span className="radar-bomb bomb-b">B</span><i className="radar-dot ct-dot dot-a" /><i className="radar-dot ct-dot dot-b" /><i className="radar-dot ct-dot dot-c" /><i className="radar-dot t-dot dot-d" /><i className="radar-dot t-dot dot-e" /><i className="radar-dot t-dot dot-f" /><span className="radar-caption">DE_MIRAGE <b>·</b> 01:15</span></div>
+}
+
+function RoundScoreboard() {
+  return <div className="round-scoreboard"><div className="score-side ct-side"><div className="mini-players">{[0, 1, 2, 3, 4].map((n) => <i key={n} className={n === 4 ? 'mini-player dead' : ''} />)}</div><span className="team-label">CT</span><b>12</b></div><div className="score-timer"><span>ROUND 24 / 30</span><strong>1:15</strong><small>BOMB NOT PLANTED</small></div><div className="score-side t-side"><b>11</b><span className="team-label">T</span><div className="mini-players">{[0, 1, 2, 3, 4].map((n) => <i key={n} className={n === 3 || n === 4 ? 'mini-player dead' : ''} />)}</div></div></div>
+}
+
+function KillFeed() {
+  return <div className="killfeed" aria-label="Recent eliminations"><div className="killfeed-label"><Radio size={11} /> ROUND FEED</div><div className="kill-row"><span className="kill-player ct-text">PLAYER1</span><span className="kill-weapon">AK-47 <Crosshair size={11} /></span><span className="kill-player">PLAYER2</span><span className="headshot-mark">HS</span></div><div className="kill-row"><span className="kill-player ct-text">PLAYER3</span><span className="assist-mark">SMOKE ASSIST</span><span className="kill-weapon">AWP <Crosshair size={11} /></span><span className="kill-player">PLAYER4</span></div><div className="kill-row"><span className="kill-player">PLAYER5</span><span className="kill-weapon">M4A1-S <Crosshair size={11} /></span><span className="kill-player ct-text">PLAYER6</span></div></div>
+}
+
+function HeroHUD() {
   const reduceMotion = useReducedMotion()
-  return (
-    <section className="hero" id="top">
-      <div className="hero-background"><ResilientImage src="https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=2000&q=85" alt="Esports arena under dramatic blue and amber lighting" /><div className="hero-wash" /><div className="hero-grid" /></div>
-      <div className="hero-inner page-width">
-        <motion.div className="hero-copy" initial={reduceMotion ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65 }}>
-          <div className="season-chip"><span className="season-live"><Radio size={12} />SEASON 2 PREMIER LIVE</span><span className="chip-separator" />128-TICK SUB-TICK SERVERS</div>
-          <div className="hero-index"><span>01</span> / 04 <i /></div>
-          <h1>MASTER THE<br /><span>SMOKE.</span><br />DOMINATE THE<br /><span className="outline-title">SERVER.</span></h1>
-          <p className="hero-description">Next-gen Counter-Strike 2 matchmaking, instant skin inspection, and competitive community servers built for the next round.</p>
-          <div className="hero-buttons"><a className="button-primary" href="#servers"><Crosshair size={17} />PLAY NOW<ArrowRight size={15} /></a><button className="button-glass" onClick={() => onInspect(skins[0])}><Target size={16} />INSPECT SKINS</button></div>
-          <div className="hero-proof"><div className="proof-avatars">{drops.slice(0, 3).map((drop) => <ResilientImage key={drop.player} src={`https://images.unsplash.com/${drop.avatar}?auto=format&fit=crop&w=64&q=80`} alt="" />)}</div><span><strong>24K+</strong> players in queue</span><span className="proof-divider" /><span className="proof-stars">★★★★★</span><span>4.9 / 5</span></div>
-        </motion.div>
-        <motion.div className="inspect-stage" initial={reduceMotion ? false : { opacity: 0, x: 24, rotateY: -8 }} animate={{ opacity: 1, x: 0, rotateY: 0 }} transition={{ duration: .8, delay: .14 }}>
-          <div className="stage-topline"><span><span className="status-square" />LIVE INSPECT</span><span>ITEM ID <b>CS2-0001847</b></span></div>
-          <div className="featured-item">
-            <div className="featured-rarity">COVERT <span>★</span></div>
-            <div className="featured-glow" />
-            <ResilientImage src="https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=1000&q=80" alt="Featured weapon skin in the CS2 inspect frame" fallbackTone="#4a89f3" />
-            <div className="featured-crosshair"><Crosshair size={19} /></div>
-            <div className="featured-zoom">+  HOVER TO INSPECT</div>
-            <div className="featured-stickers"><span>★</span><span>⚡</span><span>◈</span><span>◉</span></div>
-          </div>
-          <div className="featured-meta"><div><span className="meta-label">STAT TRAK™ FACTORY NEW</span><h3>AWP <span>|</span> Chromatic Aberration</h3></div><div className="featured-price"><span>MARKET VALUE</span><b>$ 1,284.50</b></div></div>
-          <div className="float-row"><span>FLOAT VALUE</span><code>0.0042189</code><span className="float-spectrum"><i /></span><span className="float-fn">FN</span></div>
-          <div className="featured-foot"><span><ShieldCheck size={13} /> VERIFIED ITEM</span><span>STICKER CAPSULE <b>× 4</b></span><button aria-label="Inspect featured skin" onClick={() => onInspect(skins[0])}><ArrowUpRight size={15} /></button></div>
-        </motion.div>
-      </div>
-      <div className="hero-bottom page-width"><span><ArrowDownRight size={15} /> SCROLL TO DEPLOY</span><span>EST. MMXXIV</span><div className="hero-progress"><i /></div></div>
-      <div id="season" className="hero-season-note"><Sparkles size={13} /> PREMIER SEASON 02 <span>·</span> ASCEND THE RANKS</div>
-    </section>
-  )
+  return <section className="hero-hud" id="top"><TacticalImage src={images.hero} alt="Atmospheric tactical urban map environment" className="hero-backdrop" /><div className="hero-fog" /><div className="hero-slashes" aria-hidden="true"><i /><i /><i /></div><div className="hud-top"><MiniRadar /><RoundScoreboard /><KillFeed /></div><motion.div className="hero-copy" initial={reduceMotion ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65 }}><div className="orange-tag"><span className="tag-dot" />POWERED BY SOURCE 2 <i>//</i> NEXT ERA OF COUNTER-STRIKE</div><h1>THE LARGEST<br /><em>TECHNICAL LEAP</em><br />IN COUNTER-STRIKE<br />HISTORY<span className="title-period">.</span></h1><p>Responsive volumetric smoke grenades, sub-tick server architecture, overhauled maps, and redesigned visual effects.</p><div className="hero-actions"><a className="action-green" href="https://store.steampowered.com/app/730/CounterStrike_2/" target="_blank" rel="noreferrer"><span><Play size={16} fill="currentColor" />PLAY FOR FREE ON STEAM</span><ArrowUpRight size={15} /></a><a className="action-glass" href="https://www.youtube.com/@CounterStrike" target="_blank" rel="noreferrer"><Volume2 size={16} />WATCH GAMEPLAY TRAILER</a></div><div className="hero-caption"><span><Sparkles size={13} /> FREE TO PLAY. FOREVER.</span><span className="caption-divider" /><span>EST. 1999 <i>·</i> REBUILT 2023</span></div></motion.div><div className="bottom-hud"><div className="player-status"><div className="hud-health"><span className="hud-health-icon">+</span><b>100</b><small>HP</small><span className="hud-meter"><i /></span></div><div className="hud-armor"><Shield size={17} /><b>100</b><small>ARMOR</small><span className="hud-meter"><i /></span></div><span className="hud-divider" /><div className="hud-money"><span>ROUND MONEY</span><b>4750</b></div></div><div className="objective-hud"><span className="objective-icon"><Target size={14} /></span><span><b>OBJECTIVE</b><small>ELIMINATE THE ENEMY TEAM</small></span><span className="objective-key">TAB</span></div><a href="#source-2" className="scroll-hint">DISCOVER SOURCE 2 <ArrowDown size={13} /></a></div><div className="hero-vignette" /></section>
 }
 
-function SkinCard({ item, index, onInspect }: { item: (typeof skins)[number]; index: number; onInspect: (item: (typeof skins)[number]) => void }) {
-  return (
-    <motion.article className="skin-card" style={{ '--rarity-tone': item.tone } as React.CSSProperties} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .18 }} transition={{ duration: .4, delay: index * .07 }}>
-      <div className="skin-card-top"><span className="skin-index">0{index + 1} <span>/ ARMORY</span></span><span className="rarity-tag">{item.rarity}</span></div>
-      <div className="skin-art"><div className="skin-glow" /><ResilientImage src={`https://images.unsplash.com/${item.image}?auto=format&fit=crop&w=800&q=80`} alt={`${item.weapon} ${item.skin} skin artwork`} fallbackTone={item.tone} /><span className="stattrak"><Zap size={10} fill="currentColor" /> STAT TRAK™ <b>{item.stat}</b></span><span className="inspect-corner"><ArrowUpRight size={15} /></span></div>
-      <div className="skin-details"><span className="skin-weapon">{item.weapon}</span><h3>{item.skin}</h3><span className="skin-wear">{item.wear}</span><div className="float-stat"><span>FLOAT <b>{item.float}</b></span><span className="float-spectrum"><i /></span><span className="float-quality">FN</span></div>
-        <div className="skin-price-row"><div><span>MARKET PRICE</span><b>{item.price}</b></div><span className="price-change">+2.4% <ArrowUpRight size={12} /></span></div>
-        <button className="inspect-button" onClick={() => onInspect(item)}><Crosshair size={14} /> INSPECT IN GAME <ArrowUpRight size={13} /></button>
-      </div><div className="rarity-rail" />
-    </motion.article>
-  )
+function SmokeFeature() {
+  const [smokeActive, setSmokeActive] = useState(true)
+  return <article className={`feature-card smoke-card ${smokeActive ? 'smoke-active' : ''}`}><div className="feature-card-head"><span className="feature-index">01 <i>/ 03</i></span><span className="feature-label"><span /> LIVE SIMULATION</span></div><div className="smoke-visual"><div className="smoke-map-grid" /><div className="smoke-ground-lines" /><div className="smoke-cloud cloud-a" /><div className="smoke-cloud cloud-b" /><div className="smoke-cloud cloud-c" /><div className="smoke-light" /><div className="smoke-trajectory"><i /><i /><i /><i /></div><span className="smoke-callout">A SITE <b>·</b> MID</span><span className="smoke-test-label">HE IMPACT <Zap size={11} /></span></div><div className="feature-text"><span className="feature-kicker">GAME-CHANGING MECHANIC</span><h3>DYNAMIC<br /><em>VOLUMETRIC SMOKES</em></h3><p>Smoke fills spaces naturally, reacting to lighting, gunfire, and explosions. A well-placed HE can open a sightline in an instant.</p><div className="smoke-toggle-row"><span><b>{smokeActive ? 'SMOKE DEPLOYED' : 'SMOKE CLEARED'}</b><small>TEST SMOKE VS HE GRENADE</small></span><button className={`sim-toggle ${smokeActive ? 'toggle-on' : ''}`} onClick={() => setSmokeActive(!smokeActive)} role="switch" aria-checked={!smokeActive} aria-label="Toggle smoke clearing test"><i /></button></div></div></article>
 }
 
-function Loadout({ onInspect }: { onInspect: (item: (typeof skins)[number]) => void }) {
-  const [filter, setFilter] = useState('ALL')
-  const filters = ['ALL', 'RIFLES', 'KNIVES', 'GLOVES', 'AWP']
-  const filtered = filter === 'ALL' ? skins : skins.filter((skin) => skin.category === filter || (filter === 'AWP' && skin.weapon === 'AWP'))
-  return (
-    <section className="section-block loadout-section page-width" id="loadout">
-      <SectionTitle eyebrow="THE ARMORY // CURATED INVENTORY" title={<>YOUR NEXT <span>LOADOUT.</span></>} side={<a className="section-link" href="#loadout">OPEN FULL ARMORY <ArrowUpRight size={15} /></a>} />
-      <div className="loadout-toolbar"><div className="filter-list" role="tablist" aria-label="Filter by weapon category">{filters.map((filterName) => <button key={filterName} role="tab" aria-selected={filter === filterName} className={filter === filterName ? 'filter-pill selected' : 'filter-pill'} onClick={() => setFilter(filterName)}>{filterName}</button>)}</div><span className="inventory-count"><span className="online-dot" />{String(filtered.length).padStart(2, '0')} ITEMS FOUND</span></div>
-      <div className="skin-grid">{filtered.length ? filtered.map((item) => <SkinCard key={item.code} item={item} index={skins.indexOf(item)} onInspect={onInspect} />) : <div className="empty-filter">AWP COLLECTION IS BEING RE-ARMED <span>CHECK BACK IN THE NEXT ROUND</span></div>}</div>
-      <div className="loadout-foot"><span><ShieldCheck size={14} /> ALL ITEMS VERIFIED ON STEAM</span><span>PRICES UPDATED 2 MIN AGO <i /></span></div>
-    </section>
-  )
+function SubTickFeature() {
+  return <article className="feature-card subtick-card"><div className="feature-card-head"><span className="feature-index">02 <i>/ 03</i></span><span className="feature-label">SERVER ARCHITECTURE</span></div><div className="tick-visual"><div className="timeline-row"><span className="timeline-label">64 TICK</span><div className="timeline-track"><i /><i /><i /><i /><b className="event-marker old-marker">SHOT</b></div></div><div className="timeline-row"><span className="timeline-label">128 TICK</span><div className="timeline-track dense-track"><i /><i /><i /><i /><i /><i /><i /><i /><b className="event-marker old-marker">SHOT</b></div></div><div className="timeline-row subtick-row"><span className="timeline-label">SUB-TICK</span><div className="timeline-track sub-track"><i /><i /><i /><i /><i /><b className="event-marker sub-marker">INPUT REGISTERED</b></div></div><div className="timeline-legend"><span><i className="legend-tick" /> SERVER TICK</span><span><i className="legend-event" /> PLAYER INPUT</span></div></div><div className="feature-text"><span className="feature-kicker">WHAT YOU SEE IS WHAT YOU GET</span><h3>EVERY<br /><em>MICROSECOND.</em></h3><p>Sub-tick updates capture the precise instant you move and shoot. Timing feels immediate, because it is.</p><div className="feature-readout"><span>INPUT LATENCY</span><b>CONTINUOUS <i>↗</i></b></div></div></article>
 }
 
-function ServerCard({ map, index }: { map: (typeof maps)[number]; index: number }) {
-  const [copied, setCopied] = useState(false)
-  async function copyAddress() {
-    const text = 'connect play.cs2arena.gg:27015'
-    try {
-      await navigator.clipboard.writeText(text)
-    } catch {
-      const field = document.createElement('textarea')
-      field.value = text
-      field.style.position = 'fixed'
-      field.style.opacity = '0'
-      document.body.appendChild(field)
-      field.select()
-      document.execCommand('copy')
-      field.remove()
-    }
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 2400)
+function LightingFeature() {
+  const [source2, setSource2] = useState(true)
+  return <article className="feature-card lighting-card"><div className="feature-card-head"><span className="feature-index">03 <i>/ 03</i></span><span className="feature-label">SOURCE 2 RENDERING</span></div><div className={`lighting-visual ${source2 ? 'lighting-source2' : 'lighting-classic'}`}><TacticalImage src={images.upgrade} alt="Architectural map lighting comparison" /><div className="lighting-wash" /><div className="lighting-split-line" /><span className="lighting-tag old-tag">CS:GO</span><span className="lighting-tag new-tag">CS2</span><span className="light-callout">PBR <b>·</b> HDR <b>·</b> GLOBAL ILLUMINATION</span></div><div className="feature-text"><span className="feature-kicker">A NEW STANDARD FOR VISUAL FIDELITY</span><h3>LIGHT IT<br /><em>DIFFERENT.</em></h3><p>Physically based rendering brings realistic materials, sharper light, and recognizable maps into a new era.</p><div className="lighting-controls"><span>COMPARE LIGHTING</span><div className="lighting-segment" role="group" aria-label="Compare CS:GO and CS2 lighting"><button className={!source2 ? 'selected' : ''} onClick={() => setSource2(false)}>CS:GO</button><button className={source2 ? 'selected' : ''} onClick={() => setSource2(true)}>CS2</button></div></div></div></article>
+}
+
+function Source2Features() {
+  return <section className="content-section source-section" id="source-2"><div className="section-container"><div className="section-eyebrow"><span className="orange-rule" />THE NEXT ROUND STARTS HERE <span className="section-eyebrow-index">01 — 03</span></div><div className="section-heading-row"><h2>BUILT FOR THE<br /><em>NEXT ERA.</em></h2><p>More than an upgrade. A new foundation for every clutch, every retake, every round that matters.</p></div><div className="feature-grid"><SmokeFeature /><SubTickFeature /><LightingFeature /></div></div></section>
+}
+
+function WeaponSilhouette({ type }: { type: Weapon['className'] }) {
+  return <svg className={`weapon-silhouette silhouette-${type}`} viewBox="0 0 220 90" aria-hidden="true"><g fill="currentColor"><path d="M13 39h19l12-8h40l10 7h46l9 5h24l10 7h27v9h-30l-6 13h-13l-4-13h-31l-13-7H93l-17 6H59l-12-8H13z" /><path d="M75 57h18l-5 21H76zM35 37l8-11h35l8 5H48zM148 42h20v-7h-20zM181 46h19v-4h-19z" opacity=".82" /><path d="M105 56h12v7h-12z" fill="#111921" /></g></svg>
+}
+
+function WeaponStats({ weapon }: { weapon: Weapon }) {
+  const stats = [
+    ['DAMAGE', weapon.stats.damage],
+    ['FIRE RATE', weapon.stats.fireRate],
+    ['ACCURACY', weapon.stats.accuracy],
+    ['ARMOR PEN.', weapon.stats.armor],
+  ]
+  return <div className="weapon-stats"><div className="selected-weapon-kicker">SELECTED ARSENAL</div><div className="selected-weapon-art"><WeaponSilhouette type={weapon.className} /><span>CS2 / {weapon.className.toUpperCase()}</span></div><div className="selected-weapon-name"><span>{weapon.description}</span><h3>{weapon.name}</h3><small>ROUND CREDITS <b>{weapon.cost}</b></small></div><div className="stat-bars">{stats.map(([label, value]) => <div className="stat-line" key={label}><div><span>{label}</span><b>{value}%</b></div><i><em style={{ width: `${value}%` }} /></i></div>)}</div><div className="arsenal-note"><Crosshair size={13} /> STATS SHOWN FOR GAMEPLAY REFERENCE</div></div>
+}
+
+function BuyMenu() {
+  const [category, setCategory] = useState<BuyCategory>('RIFLES')
+  const [selectedWeapon, setSelectedWeapon] = useState<Weapon>(weapons.RIFLES[0])
+  const categories = Object.keys(weapons) as BuyCategory[]
+  function selectCategory(nextCategory: BuyCategory) {
+    setCategory(nextCategory)
+    setSelectedWeapon(weapons[nextCategory][0])
   }
-  return (
-    <motion.article className="server-card" initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .15 }} transition={{ duration: .4, delay: index * .08 }}>
-      <div className="server-image"><ResilientImage src={`https://images.unsplash.com/${map.image}?auto=format&fit=crop&w=800&q=80`} alt={`${map.name} inspired map environment`} fallbackTone={map.tone} /><div className="server-image-shade" /><div className="map-marker"><Pin size={13} fill="currentColor" /> {map.location}</div><span className="server-id">0{index + 1}</span><div className="map-title"><span className="mode-badge">{map.mode}</span><h3>{map.name}</h3></div><span className="map-corner"><ArrowUpRight size={16} /></span></div>
-      <div className="server-info"><div className="server-slots"><div className="slots-top"><span><Users size={13} /> PLAYER SLOTS</span><b>{map.players} <small>PLAYERS</small></b></div><div className="slots-bar"><i style={{ width: `${Number(map.players.split('/')[0].trim()) / 20 * 100}%` }} /></div></div><div className="server-bottom"><span className="ping"><span />{map.ping} <small>MS</small></span><button className={copied ? 'copy-ip copied' : 'copy-ip'} onClick={copyAddress}>{copied ? <ShieldCheck size={13} /> : <Copy size={13} />}{copied ? 'CONSOLE IP COPIED!' : 'COPY IP'}</button></div></div>
-    </motion.article>
-  )
+  return <section className="content-section buy-section" id="buy-menu"><div className="section-container"><div className="section-eyebrow"><span className="orange-rule" />B // BUY MENU <span className="section-eyebrow-index">02 — 03</span></div><div className="section-heading-row"><h2>CHOOSE YOUR<br /><em>ADVANTAGE.</em></h2><p>Every round starts with a decision. Explore the arsenal, compare capabilities, and build your buy.</p></div><div className="buy-menu-shell"><div className="buy-menu-top"><span className="buy-menu-title"><Gamepad2 size={16} /> EQUIPMENT SELECTION <i>//</i> ROUND 24</span><span className="buy-balance"><span>ROUND MONEY</span><b>4,750</b></span></div><div className="buy-menu-body"><div className="buy-categories" role="tablist" aria-label="Weapon categories">{categories.map((item, index) => <button key={item} role="tab" aria-selected={category === item} className={category === item ? 'buy-category active' : 'buy-category'} onClick={() => selectCategory(item)}><span>{String(index + 1).padStart(2, '0')}</span>{item}<ArrowRight size={12} /></button>)}</div><div className="buy-grid" role="tabpanel" aria-label={`${category} selection`}>{weapons[category].map((weapon) => <button key={weapon.name} className={selectedWeapon.name === weapon.name ? 'weapon-slot weapon-selected' : 'weapon-slot'} onClick={() => setSelectedWeapon(weapon)} aria-pressed={selectedWeapon.name === weapon.name}><span className="weapon-key">{weapon.key}</span><WeaponSilhouette type={weapon.className} /><span className="weapon-name">{weapon.name}</span><span className="weapon-cost">{weapon.cost === 'FREE' ? 'FREE' : `${weapon.cost} CR`}</span></button>)}</div><WeaponStats weapon={selectedWeapon} /></div><div className="buy-menu-bottom"><span><span className="buy-status-dot" /> BUY PHASE <i>·</i> 00:18</span><span>SELECT AN ITEM TO VIEW COMBAT DATA</span><span>MAX CREDITS <b>16,000</b></span></div></div><div className="buy-note"><span><Shield size={14} /> ROUND CREDITS ARE EARNED IN MATCH</span><span>ARSENAL // COUNTER-STRIKE 2</span></div></div></section>
 }
 
-function Servers() {
-  return (
-    <section className="section-block servers-section" id="servers"><div className="page-width"><SectionTitle eyebrow="FIND YOUR NEXT FIGHT // 128-TICK" title={<>ACTIVE DUTY <span>MAP POOL.</span></>} side={<div className="region-select"><Globe2 size={15} /><span>EUROPE WEST</span><span className="region-dot" /></div>} /><div className="server-grid">{maps.map((map, index) => <ServerCard key={map.name} map={map} index={index} />)}</div><div className="servers-status"><span><span className="online-dot" /> ALL SYSTEMS OPERATIONAL</span><span>4 REGIONS <i /> 128-TICK <i /> 14MS AVG PING</span><a href="#servers">SERVER BROWSER <ArrowRight size={13} /></a></div></div></section>
-  )
+function MapShowcase() {
+  const [group, setGroup] = useState<MapGroup>('OVERHAUL')
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [map, setMap] = useState<MapInfo>(mapGroups.OVERHAUL[0])
+  const [showCallouts, setShowCallouts] = useState(true)
+  function changeGroup(next: MapGroup) {
+    setGroup(next)
+    setSelectedIndex(0)
+    setMap(mapGroups[next][0])
+  }
+  function selectMap(index: number) {
+    setSelectedIndex(index)
+    setMap(mapGroups[group][index])
+  }
+  return <section className="content-section maps-section" id="maps"><div className="section-container"><div className="section-eyebrow"><span className="orange-rule" />MAP POOL // ACTIVE DUTY <span className="section-eyebrow-index">03 — 03</span></div><div className="section-heading-row"><h2>MADE FOR THE<br /><em>MAP CONTROL.</em></h2><p>Familiar lanes. Rebuilt surfaces. Every angle now rendered with the clarity and depth of Source 2.</p></div><div className="map-tabs" role="tablist" aria-label="Map categories">{(['OVERHAUL', 'UPGRADE', 'TOUCHSTONE'] as MapGroup[]).map((item) => <button key={item} role="tab" aria-selected={group === item} className={group === item ? 'map-tab map-tab-active' : 'map-tab'} onClick={() => changeGroup(item)}><span>{item}</span><small>{item === 'OVERHAUL' ? 'BUILT FROM THE GROUND UP' : item === 'UPGRADE' ? 'SOURCE 2 PBR' : 'CLASSIC COMPETITIVE'}</small></button>)}</div><div className="map-showcase"><div className="map-photo"><TacticalImage src={map.image} alt={`${map.name} map environment`} /><div className="map-photo-wash" /><div className="map-photo-top"><span><Globe2 size={13} /> ACTIVE DUTY MAP POOL</span><span>DE_{map.name.replaceAll(' ', '')}</span></div><AnimatePresence mode="wait"><motion.div className="map-photo-title" key={map.name} initial={{ opacity: 0, y: 9 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .2 }}><span>{map.subtitle}</span><h3>{map.name}</h3></motion.div></AnimatePresence>{showCallouts && <div className="map-callouts">{map.callouts.map((callout, index) => <span key={callout} className={`callout-pin callout-${index}`}><Pin size={11} fill="currentColor" />{callout}</span>)}</div>}<button className="callouts-toggle" onClick={() => setShowCallouts(!showCallouts)} aria-pressed={showCallouts}>{showCallouts ? 'HIDE' : 'SHOW'} CALLOUTS</button></div><div className="map-data"><div className="map-choice-list">{mapGroups[group].map((item, index) => <button key={item.name} className={map.name === item.name ? 'map-choice active' : 'map-choice'} onClick={() => selectMap(index)}><span className="map-choice-number">0{index + 1}</span><span><b>{item.name}</b><small>{item.subtitle}</small></span><ArrowRight size={14} /></button>)}</div><div className="map-telemetry"><div className="telemetry-heading"><span>ROUND WIN DISTRIBUTION</span><span>LAST 30 DAYS</span></div><div className="telemetry-row"><span className="ct-telemetry">CT</span><div className="telemetry-bar"><i style={{ width: `${map.ctWin}%` }} /></div><b>{map.ctWin}%</b></div><div className="telemetry-row"><span className="t-telemetry">T</span><div className="telemetry-bar"><i style={{ width: `${map.tWin}%` }} /></div><b>{map.tWin}%</b></div><div className="telemetry-foot"><span>MAP CONTROL MATTERS</span><span>COMPETITIVE DATA</span></div></div><div className="map-data-stamp"><Crosshair size={14} /><span><b>TACTICAL OVERLAY</b><small>CALL OUTS ENABLED</small></span><span className="map-stamp-status">LIVE</span></div></div></div><div className="map-footerline"><span><span className="online-pulse" /> MAP ROTATION ACTIVE</span><span>9 MAPS <i /> 3 CATEGORIES <i /> ALL ACTIVE DUTY</span></div></div></section>
 }
 
-function RatingBadge({ rating, tier }: { rating: string; tier: string }) {
-  return <span className={`rating-badge rating-${tier}`}><span className="rating-chevron">◢</span><span>{rating}</span></span>
-}
-
-function Leaderboard() {
-  return (
-    <section className="section-block leaderboard-section page-width" id="leaderboard">
-      <SectionTitle eyebrow="GLOBAL LEADERBOARD // EU REGION" title={<>THE PREMIER <span>ELITE.</span></>} side={<div className="season-label"><Trophy size={14} /> SEASON 02 <span>·</span> UPDATED LIVE</div>} />
-      <div className="leaderboard-frame"><div className="leaderboard-head"><div className="leaderboard-caption"><span className="leaderboard-icon"><Crown size={16} /></span><div><b>PREMIER RATING</b><span>TOP PLAYERS · GLOBAL</span></div></div><div className="table-columns"><span>PLAYER</span><span>WIN RATE</span><span>HEADSHOTS</span><span>CS RATING</span></div></div>
-        <div className="leader-list">{players.map((player, index) => <motion.div className="leader-row" key={player.name} initial={{ opacity: 0, x: -12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: .35, delay: index * .06 }}><span className={`rank-number ${index === 0 ? 'rank-first' : ''}`}>{player.rank}</span><div className="player-cell"><div className="player-avatar"><ResilientImage src={`https://images.unsplash.com/${player.avatar}?auto=format&fit=crop&w=100&q=80`} alt={`${player.name} avatar`} /><span className="player-online" /></div><div className="player-ident"><b>{player.name} <span className="flag">{player.country}</span></b><small>{player.team}</small></div></div><div className="leader-stat winrate"><span className="mobile-stat-label">WIN RATE</span><b>{player.wins}</b><small>+{player.delta}</small></div><div className="leader-stat headshot"><span className="mobile-stat-label">HEADSHOTS</span><b>{player.hs}</b></div><div className="rating-cell"><span className="mobile-stat-label">CS RATING</span><RatingBadge rating={player.rating} tier={player.tier} /></div></motion.div>)}</div>
-        <div className="leaderboard-footer"><span><span className="online-dot" /> RANKINGS UPDATE EVERY MATCH</span><a href="#leaderboard">FULL LEADERBOARD <ArrowUpRight size={14} /></a></div>
-      </div>
-    </section>
-  )
+function Premier() {
+  const [mode, setMode] = useState<'BAN' | 'PICK'>('BAN')
+  const [mapStates, setMapStates] = useState<Record<string, 'BANNED' | 'PICKED'>>({})
+  function handleMap(name: string) {
+    const nextState = mode === 'BAN' ? 'BANNED' : 'PICKED'
+    setMapStates((current) => {
+      const next = { ...current }
+      if (next[name] === nextState) delete next[name]
+      else next[name] = nextState
+      return next
+    })
+  }
+  return <section className="content-section premier-section" id="premier"><div className="section-container"><div className="section-eyebrow"><span className="orange-rule" />CS RATING // PREMIER <span className="section-eyebrow-index">RANKED PLAY</span></div><div className="section-heading-row"><h2>YOUR RATING.<br /><em>YOUR LEGACY.</em></h2><p>Pick and ban the active duty map pool, queue with your team, and climb your way to the top of Premier.</p></div><div className="premier-layout"><div className="veto-panel"><div className="veto-head"><span><Trophy size={15} /> ACTIVE DUTY VETO</span><span>BEST OF 1 <i>·</i> 7 MAPS</span></div><div className="veto-teams"><span className="veto-team ct-veto"><i /> COUNTER-TERRORISTS <b>0</b></span><span className="veto-phase">MAP SELECTION <i>01:24</i></span><span className="veto-team t-veto"><b>0</b> TERRORISTS <i /></span></div><div className="veto-controls"><span>SELECT ACTION</span><div className="veto-toggle" role="group" aria-label="Veto action"><button className={mode === 'BAN' ? 'selected' : ''} onClick={() => setMode('BAN')}>BAN MAP</button><button className={mode === 'PICK' ? 'selected' : ''} onClick={() => setMode('PICK')}>PICK MAP</button></div><span className="veto-instruction">CHOOSE A MAP TO {mode}</span></div><div className="veto-map-list">{vetoMaps.map((name, index) => <button key={name} className={`veto-map ${mapStates[name] ? `veto-${mapStates[name].toLowerCase()}` : ''}`} onClick={() => handleMap(name)} aria-pressed={Boolean(mapStates[name])}><span className="veto-map-number">0{index + 1}</span><span className="veto-map-name">{name}</span><span className="veto-state">{mapStates[name] ? (mapStates[name] === 'BANNED' ? <X size={13} /> : <Check size={13} />) : <ArrowUpRight size={12} />}</span>{mapStates[name] && <small>{mapStates[name]}</small>}</button>)}</div><div className="veto-foot"><span><span className="buy-status-dot" /> VETO IN PROGRESS</span><span>MAP PICK ORDER <b>CT → T → CT</b></span></div></div><div className="rating-panel"><div className="rating-panel-heading"><span><Trophy size={15} /> PREMIER RATING TIERS</span><small>SEASON 02</small></div><div className="rating-stack">{ratingTiers.map((tier, index) => <motion.div className={`rating-tier tier-${tier.color}`} key={tier.score} initial={{ opacity: 0, x: 12 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: .28, delay: index * .05 }}><span className="tier-glow" /><span className="tier-emblem"><Crosshair size={15} /></span><b>{tier.score}</b><span className="tier-label">{tier.label}</span><span className="tier-rank">{String(index + 1).padStart(2, '0')}</span></motion.div>)}</div><div className="rating-explainer"><span><Zap size={13} /> WIN MATCHES. GAIN RATING.</span><p>Every Premier match updates your CS Rating. Find your rank on the global leaderboard and keep moving up.</p></div></div></div></div></section>
 }
 
 function Footer() {
-  return (
-    <footer className="site-footer"><div className="page-width"><div className="footer-main"><a className="brand footer-brand" href="#top"><span className="brand-mark"><Crosshair size={21} /></span><span>CS2<span className="brand-slash">//</span>ARENA</span></a><p>Built for the ones who clutch.<br /><span>See you in the server.</span></p><div className="footer-social"><a href="https://discord.com" aria-label="Discord"><span>DS</span></a><a href="https://x.com" aria-label="X"><span>𝕏</span></a><a href="https://steamcommunity.com" aria-label="Steam"><span>S</span></a></div></div><div className="footer-mid"><div className="footer-system"><span><span className="online-dot" /> SYSTEM STATUS: ALL SYSTEMS NOMINAL</span><span>SERVER LOCATIONS <b>EU</b> <b>CIS</b> <b>NA</b></span></div><div className="footer-links"><a href="#loadout">ARMORY</a><a href="#servers">SERVERS</a><a href="#leaderboard">RANKINGS</a><a href="#season">SEASON PASS</a><a href="https://store.steampowered.com/app/730/CounterStrike_2/" target="_blank" rel="noreferrer">CS2 ON STEAM <ExternalLink size={11} /></a></div></div><div className="footer-bottom"><span>© 2026 CS2//ARENA. NOT AFFILIATED WITH VALVE CORPORATION.</span><span>COUNTER-STRIKE, COUNTER-STRIKE 2, AND THE COUNTER-STRIKE LOGO ARE TRADEMARKS OF VALVE CORPORATION.</span><a href="#top">BACK TO TOP ↑</a></div></div></footer>
-  )
-}
-
-function InspectDialog({ item, onClose }: { item: (typeof skins)[number] | null; onClose: () => void }) {
-  return <AnimatePresence>{item && <motion.div className="dialog-backdrop" role="presentation" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><motion.section className="inspect-dialog" role="dialog" aria-modal="true" aria-labelledby="inspect-title" initial={{ opacity: 0, y: 14, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10 }}><div className="dialog-top"><span><Crosshair size={15} /> LIVE ITEM INSPECT</span><button onClick={onClose} aria-label="Close inspect dialog"><X size={18} /></button></div><div className="dialog-image" style={{ '--rarity-tone': item.tone } as React.CSSProperties}><ResilientImage src={`https://images.unsplash.com/${item.image}?auto=format&fit=crop&w=900&q=80`} alt={`${item.weapon} ${item.skin} inspect artwork`} fallbackTone={item.tone} /><span>{item.rarity} · {item.code}</span></div><div className="dialog-info"><span className="skin-weapon">{item.weapon}</span><h2 id="inspect-title">{item.skin}</h2><span className="skin-wear">{item.wear}</span><div className="dialog-specs"><span>FLOAT VALUE <b>{item.float}</b></span><span>MARKET EST. <b>{item.price}</b></span></div><p>Inspect this item in the CS2 client to view its finish, wear pattern, and applied stickers in 3D.</p><a className="button-primary dialog-action" href={`steam://rungame/730/76561202255233023/+csgo_econ_action_preview%20${encodeURIComponent(item.code)}`}><Crosshair size={15} /> OPEN IN GAME <ArrowUpRight size={14} /></a></div></motion.section></motion.div>}</AnimatePresence>
+  return <footer className="game-footer"><div className="section-container"><div className="footer-main"><div className="footer-brand-block"><GameLogo small /><p>THE NEXT ERA OF COUNTER-STRIKE.<br /><span>BUILT ON SOURCE 2.</span></p></div><div className="footer-badges"><a href="https://www.counter-strike.net/cs2" target="_blank" rel="noreferrer"><Crosshair size={17} /><span>COUNTER-STRIKE 2</span></a><a href="https://www.valvesoftware.com/en/" target="_blank" rel="noreferrer"><Sparkles size={17} /><span>SOURCE 2</span></a><a href="https://store.steampowered.com/app/730/CounterStrike_2/" target="_blank" rel="noreferrer"><Gamepad2 size={17} /><span>STEAM</span></a></div><div className="system-requirements"><div className="requirements-heading"><span>PC SYSTEM REQUIREMENTS</span><span>MINIMUM</span></div><div><span>OS</span><b>Windows® 10</b></div><div><span>PROCESSOR</span><b>4 hardware CPU threads</b></div><div><span>MEMORY</span><b>8 GB RAM</b></div><div><span>GRAPHICS</span><b>1 GB DirectX 11 compatible</b></div><div><span>STORAGE</span><b>85 GB available space</b></div></div></div><div className="footer-links"><div className="footer-legal"><span>© 2026 VALVE CORPORATION. ALL RIGHTS RESERVED.</span><span>COUNTER-STRIKE, COUNTER-STRIKE 2, AND THE COUNTER-STRIKE LOGO ARE TRADEMARKS OF VALVE CORPORATION.</span></div><nav aria-label="Footer links"><a href="https://www.counter-strike.net/cs2" target="_blank" rel="noreferrer">COUNTER-STRIKE.NET <ArrowUpRight size={11} /></a><a href="https://store.steampowered.com/" target="_blank" rel="noreferrer">STEAM <ArrowUpRight size={11} /></a><a href="https://www.valvesoftware.com/" target="_blank" rel="noreferrer">VALVE <ArrowUpRight size={11} /></a></nav></div><div className="fan-disclaimer">UNOFFICIAL FAN-MADE SHOWCASE. NOT AFFILIATED WITH OR ENDORSED BY VALVE CORPORATION.</div></div></footer>
 }
 
 export default function Cs2Arena() {
-  const [inspectItem, setInspectItem] = useState<(typeof skins)[number] | null>(null)
-  return <div className="arena-shell"><Navbar /><main><Hero onInspect={setInspectItem} /><Loadout onInspect={setInspectItem} /><Servers /><Leaderboard /></main><Footer /><InspectDialog item={inspectItem} onClose={() => setInspectItem(null)} /></div>
+  return <div className="cs2-site"><TopBar /><main><HeroHUD /><Source2Features /><BuyMenu /><MapShowcase /><Premier /></main><Footer /></div>
 }

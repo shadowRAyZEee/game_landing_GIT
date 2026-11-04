@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'CS2//ARENA — Master the Smoke',
-  description: 'Next-gen Counter-Strike 2 matchmaking, competitive community servers, and a verified skin armory. Find your next fight at CS2//ARENA.',
+  title: 'Counter-Strike 2 — Powered by Source 2',
+  description: 'Discover the next era of Counter-Strike 2: responsive volumetric smokes, sub-tick servers, overhauled maps, and Premier competition.',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -26,11 +26,8 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
+  colorScheme: 'dark',
+  themeColor: '#0b1016',
 }
 
 export default function RootLayout({
